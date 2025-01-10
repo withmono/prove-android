@@ -28,7 +28,7 @@
 
         <activity
                 android:name="mono.prove.kit.ProveKitActivity"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+                android:theme="@style/Theme.MonoProveWidget"/>
     </application>
 
 </manifest>

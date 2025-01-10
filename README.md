@@ -83,9 +83,18 @@ Add the following code to your AndroidManifest.xml file:
     <!-- Rest of the code -->
     <activity
         android:name="mono.prove.kit.ProveKitActivity"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        android:theme="@style/YourAppTheme" />
 </application>
 ```
+Add the Material theme to your app theme:
+```xml
+<resources>
+<style name="YourAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Customize your theme here. -->
+</style>
+</resources>
+```
+
 ### Add the Mono Prove SDK to your app
 
 Add the following code to your Jetpack Compose activity file:
@@ -348,7 +357,7 @@ Call the show() method of the ProveKit instance to launch the Mono Prove widget:
 ```kotlin
 val onClickListener = View.OnClickListener { mProveKit.show() }
 
-findViewById<View>(ViewID).setOnClickListener(onClickListener)
+findViewById<View>(ButtonViewID).setOnClickListener(onClickListener)
 
 ```
 
@@ -413,7 +422,7 @@ View.OnClickListener onClickListener = new View.OnClickListener() {
   }
 };
 
-findViewById(ViewID).setOnClickListener(onClickListener);
+findViewById(ButtonViewID).setOnClickListener(onClickListener);
 ```
 
 ## Support

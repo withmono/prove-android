@@ -5,98 +5,57 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.ViewGroup
+import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import android.webkit.*
-import android.webkit.WebView.setWebContentsDebuggingEnabled
+import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
 import org.json.JSONException
 import org.json.JSONObject
 
 class ProveKitActivity : AppCompatActivity() {
-  private lateinit var url: String
-  private val permissions = arrayOf(Manifest.permission.CAMERA)
+  private lateinit var webView: WebView
+  private lateinit var loader: ProgressBar
+  private lateinit var progressContainer: View
 
-  private val permissionLauncher =
-    registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-      val allGranted = result.values.all { it }
-      if (allGranted) {
-        initializeWebView()
-      } else {
-        Toast.makeText(this, "Permissions not granted", Toast.LENGTH_SHORT).show()
-        finish()
-      }
-    }
+  private val permissions = arrayOf(Manifest.permission.CAMERA)
+  private val requestCode = 0
+  private lateinit var url: String
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+    supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
+    window.setFlags(
+      WindowManager.LayoutParams.FLAG_FULLSCREEN,
+      WindowManager.LayoutParams.FLAG_FULLSCREEN,
+    )
 
-    // Fetch the URL from the intent
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.main)
+
+    setup()
+  }
+
+  private fun isPermissionGranted(): Boolean {
+    return permissions.all {
+      ActivityCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+    }
+  }
+
+  private fun askPermissions() {
+    ActivityCompat.requestPermissions(this, permissions, requestCode)
+  }
+
+  @SuppressLint("SetJavaScriptEnabled")
+  private fun setup() {
+    webView = findViewById(R.id.prove_web_view)
+    loader = findViewById(R.id.prove_loader)
+    progressContainer = findViewById(R.id.progress_container)
+
     url = intent.getStringExtra(Constants.KEY_URL) ?: ""
 
-    // Check and request permissions immediately
-    checkPermissionsAndInitialize()
-  }
-
-  private fun checkPermissionsAndInitialize() {
-    val deniedPermissions =
-      permissions.filter {
-        ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-      }
-    if (deniedPermissions.isNotEmpty()) {
-      permissionLauncher.launch(deniedPermissions.toTypedArray())
-    } else {
-      initializeWebView()
-    }
-  }
-
-  private fun initializeWebView() {
-    enableEdgeToEdge()
-    setContent { ProveWidget(url, onLoadWebViewContent = { onLoadWebViewContent() }) }
-  }
-
-  private fun onLoadWebViewContent() {
-    val data = JSONObject()
-    val unixTime = System.currentTimeMillis() / 1000
-
-    try {
-      // Trigger OPENED event
-      data.put("timestamp", unixTime)
-      val reference: String? = ProveWebInterface.getInstance().getReference()
-
-      if (reference != null) {
-        data.put("reference", reference)
-        data.put("type", "mono.prove.widget_opened")
-      }
-      val proveEvent = ProveEvent("OPENED", data)
-      ProveWebInterface.getInstance().triggerEvent(proveEvent)
-    } catch (e: JSONException) {
-      e.printStackTrace()
-    }
-  }
-}
-
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-fun ProveWidget(url: String, onLoadWebViewContent: () -> Unit) {
-  val context = LocalContext.current
-  val webView = remember { WebView(context) }
-  var isLoading by remember { mutableStateOf(true) }
-
-  LaunchedEffect(Unit) {
-    // Configure WebView settings
     webView.settings.apply {
       javaScriptEnabled = true
       loadWithOverviewMode = true
@@ -113,24 +72,13 @@ fun ProveWidget(url: String, onLoadWebViewContent: () -> Unit) {
         safeBrowsingEnabled = true
       }
       setSupportZoom(true)
-      setWebContentsDebuggingEnabled(true)
     }
 
-    // Set WebView client and Chrome client
     webView.webViewClient =
       object : WebViewClient() {
-        override fun onPageStarted(
-          view: WebView?,
-          url: String?,
-          favicon: android.graphics.Bitmap?,
-        ) {
-          super.onPageStarted(view, url, favicon)
-          isLoading = true
-        }
-
         override fun onPageFinished(view: WebView, url: String) {
-          super.onPageFinished(view, url)
-          isLoading = false
+          progressContainer.visibility = View.GONE
+          loader.visibility = View.GONE
 
           // Trigger OPENED event
           val data = JSONObject()
@@ -161,36 +109,46 @@ fun ProveWidget(url: String, onLoadWebViewContent: () -> Unit) {
       }
 
     // Add JavaScript interface
-    val monoWebInterface = ProveWebInterface.getInstance()
-    (context as? AppCompatActivity)?.let { monoWebInterface.setActivity(it) }
-    webView.addJavascriptInterface(monoWebInterface, "MonoClientInterface")
+    val webInterface = ProveWebInterface.getInstance().apply { setActivity(this@ProveKitActivity) }
+    webView.addJavascriptInterface(webInterface, "MonoClientInterface")
 
-    // Load the URL
-    webView.loadUrl(url)
+    if (!isPermissionGranted()) {
+      askPermissions()
+    } else {
+      webView.loadUrl(url)
+    }
 
-    onLoadWebViewContent()
+    // Trigger OPENED event
+    val data = JSONObject()
+    val unixTime = System.currentTimeMillis() / 1000
+    try {
+      data.put("timestamp", unixTime)
+      val reference = ProveWebInterface.getInstance().getReference()
+      reference?.let {
+        data.put("reference", it)
+        data.put("type", "mono.prove.widget_opened")
+      }
+      val event = ProveEvent("OPENED", data)
+      ProveWebInterface.getInstance().triggerEvent(event)
+    } catch (e: JSONException) {
+      e.printStackTrace()
+    }
   }
 
-  Surface {
-    Box(Modifier.fillMaxSize()) {
-      // WebView content
-      AndroidView(
-        factory = {
-          webView.apply {
-            layoutParams =
-              ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-              )
-          }
-        },
-      )
-
-      // Progress indicator overlay
-      if (isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-          CircularProgressIndicator()
-        }
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray,
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    if (requestCode == this.requestCode) {
+      if (
+        grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+      ) {
+        webView.loadUrl(url)
+      } else {
+        Toast.makeText(this, "Permissions not granted", Toast.LENGTH_SHORT).show()
+        finish()
       }
     }
   }

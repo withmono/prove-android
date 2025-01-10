@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <WebView
+      android:id="@+id/prove_web_view"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent" />
+
+    <RelativeLayout
+      android:id="@+id/progress_container"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent">
+        <View
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:background="?attr/colorSurface"
+          android:alpha=".80" />
+
+        <ProgressBar
+          android:id="@+id/prove_loader"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_centerInParent="true"
+          android:indeterminateTint="?attr/colorOnSurface"
+      />
+    </RelativeLayout>
+</RelativeLayout>

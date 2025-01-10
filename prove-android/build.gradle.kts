@@ -1,9 +1,8 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 
-//    id("maven-publish")
+    id("maven-publish")
 }
 
 android {
@@ -31,34 +30,32 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
     kotlinOptions { jvmTarget = "1.8" }
-    buildFeatures { compose = true }
+    buildFeatures { compose = false }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.material3.android)
     implementation(libs.material)
     implementation(libs.google.gson)
-    implementation(libs.androidx.webkit)
-    implementation(libs.androidx.runtime.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
-//publishing {
-//    publications {
-//        register<MavenPublication>("release") {
-//            afterEvaluate {
-//                from(components["release"])
-//                groupId = "com.github.withmono"
-//                artifactId = "prove-android"
-//                version = "1.0.0"
-//            }
-//        }
-//    }
-//}
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            afterEvaluate {
+                from(components["release"])
+                groupId = "com.github.withmono"
+                artifactId = "prove-android"
+                version = "1.0.0-alpha.1"
+                pom {
+                    description = "The Mono Prove SDK is a quick and secure way to onboard your users from within your iOS app. Mono Prove is a customer onboarding product that offers businesses faster customer onboarding and prevents fraudulent sign-ups, powered by the MDN and facial recognition technology."
+                }
+            }
+        }
+    }
+}
