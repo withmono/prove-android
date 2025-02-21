@@ -51,7 +51,7 @@ publishing {
                 from(components["release"])
                 groupId = "com.github.withmono"
                 artifactId = "prove-android"
-                version = "1.0.0-alpha.1"
+                version = "1.0.0"
                 pom {
                     description = "The Mono Prove SDK is a quick and secure way to onboard your users from within your iOS app. Mono Prove is a customer onboarding product that offers businesses faster customer onboarding and prevents fraudulent sign-ups, powered by the MDN and facial recognition technology."
                 }

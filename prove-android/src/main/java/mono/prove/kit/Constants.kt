@@ -3,8 +3,7 @@ package mono.prove.kit
 object Constants {
   const val URL_SCHEME: String = "https"
 
-  // TODO(Victor): Update host
-  const val PROVE_URL: String = "develop.d121npziv08191.amplifyapp.com"
+  const val PROVE_URL: String = "prove.mono.co"
 
   const val KEY_URL: String = "mono.prove.kit.url"
 
